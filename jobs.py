@@ -17,10 +17,35 @@ def scrape_url(url):
             rows = []
             for row in table.find_all('tr')[1:]:  # Skip the header row
                 cells = row.find_all('td')
-                row_data = [cell.get_text(separator=" ").strip() for cell in cells]
+                row_data = []
+                for i, cell in enumerate(cells):
+                    # Check if the cell contains a link
+                    link = cell.find('a')
+                    if link and i != 0: # Skip the company column
+                        row_data.append(link.get('href'))  # Extract the href attribute
+                    else:
+                        row_data.append(cell.get_text(separator=" ").strip())
                 rows.append(row_data)
             
             df = pd.DataFrame(rows, columns=headers)
+
+            # Handle the ↳ character in the Company column
+            company_col = df.columns[df.columns.str.contains('Company', case=False, regex=True)][0]
+            last_company = None
+            for i, company in enumerate(df[company_col]):
+                if '↳' in company:
+                    df.at[i, company_col] = last_company
+                else:
+                    last_company = company
+
+            # Replace "NYC" with "New York, NY" in the Location column
+            location_col = df.columns[df.columns.str.contains('Location', case=False, regex=True)][0]
+            df[location_col] = df[location_col].str.replace('NYC', 'New York, NY', case=False)
+            df[location_col] = df[location_col].str.replace('SF', 'San Francisco, CA', case=False)
+            df.loc[df[location_col].str.contains('remote', case=False, na=False), location_col] = 'Remote'
+
+
+            
         else:
             print("table not found :(")
 
@@ -32,13 +57,11 @@ def prune_table(df):
         'Company': ['Company', 'Employer', 'Organization'],
         'Role': ['Role', 'Job', 'Title', 'Position'],
         'Location': ['Location', 'City', 'Place'],
-        'Link': ['Link', 'URL', 'Website'],
+        'Link': ['Link', 'URL', 'Apply'],
         'Date': ['Date', 'Time', 'Posted']
     }
     
     new_column_names = {}
-    print("columns:")
-    print(df.columns)
     for col in df.columns:
         print(col)
         for new_name, keywords in column_mapping.items():
@@ -46,19 +69,20 @@ def prune_table(df):
                 new_column_names[col] = new_name
                 break
     
+    
+
     df.rename(columns=new_column_names, inplace=True)
     final_df = df[['Company', 'Role', 'Location', 'Link', 'Date']]
+    final_df = final_df[final_df['Link'].str.len() >= 6]
 
     return final_df
 
-
-
-url = "https://github.com/SimplifyJobs/Summer2025-Internships#we-love-our-contributors-%EF%B8%8F%EF%B8%8F"
-
 url = "https://github.com/Ouckah/Summer2025-Internships#we-love-our-contributors-%EF%B8%8F%EF%B8%8F"
 url = "https://github.com/arunike/Summer-2025-Internship-List?tab=readme-ov-file#contributing"
-
+url = "https://github.com/SimplifyJobs/Summer2025-Internships#we-love-our-contributors-%EF%B8%8F%EF%B8%8F"
 data = scrape_url(url)
+data = prune_table(data)
 print(data)
-print(prune_table(data))
+print(data.value_counts("Location"))
+print(data.value_counts("Company"))
 print("done!")
