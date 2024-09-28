@@ -56,13 +56,11 @@ def prune_table(df):
         'Company': ['Company', 'Employer', 'Organization'],
         'Role': ['Role', 'Job', 'Title', 'Position'],
         'Location': ['Location', 'City', 'Place'],
-        'Link': ['Link', 'URL', 'Website'],
+        'Link': ['Link', 'URL', 'Apply'],
         'Date': ['Date', 'Time', 'Posted']
     }
     
     new_column_names = {}
-    print("columns:")
-    print(df.columns)
     for col in df.columns:
         print(col)
         for new_name, keywords in column_mapping.items():
@@ -70,6 +68,8 @@ def prune_table(df):
                 new_column_names[col] = new_name
                 break
     
+    
+
     df.rename(columns=new_column_names, inplace=True)
     final_df = df[['Company', 'Role', 'Location', 'Link', 'Date']]
     return final_df
