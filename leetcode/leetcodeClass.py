@@ -24,6 +24,7 @@ class LeetcodeInst:
         raw_problems = self.get_problems_raw()
         problem_list = []
         for problem_data in raw_problems:
+            problem_data.status
             name = problem_data.title
             url = self.get_problem_url(name)
             difficulty = problem_data.difficulty
@@ -110,8 +111,7 @@ class LeetcodeInst:
                 limit=10,
                 skip=3,
                 filters=leetcode.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
-                    difficulty="MEDIUM",
-                    status="NOT_STARTED",
+                    status='NOT_STARTED',
                     premium_only=False,
                 ),
             ),
@@ -122,18 +122,94 @@ class LeetcodeInst:
         question_list = data.problemset_question_list.questions
         return question_list
     
-    def get_problems_completed(self):
-        return []
+    def problem_is_completed(self, title_slug):
+    
+        graphql_request = leetcode.GraphqlQuery(
+                query="""
+                    query getQuestionDetail($titleSlug: String!) {
+                    question(titleSlug: $titleSlug) {
+                        questionId
+                        questionFrontendId
+                        boundTopicId
+                        title
+                        titleSlug
+                        frequency
+                        freqBar
+                        content
+                        translatedTitle
+                        isPaidOnly
+                        difficulty
+                        likes
+                        dislikes
+                        isLiked
+                        isFavor
+                        similarQuestions
+                        contributors {
+                        username
+                        profileUrl
+                        avatarUrl
+                        __typename
+                        }
+                        langToValidPlayground
+                        topicTags {
+                        name
+                        slug
+                        translatedName
+                        __typename
+                        }
+                        companyTagStats
+                        codeSnippets {
+                        lang
+                        langSlug
+                        code
+                        __typename
+                        }
+                        stats
+                        acRate
+                        codeDefinition
+                        hints
+                        solution {
+                        id
+                        canSeeDetail
+                        __typename
+                        }
+                        hasSolution
+                        hasVideoSolution
+                        status
+                        sampleTestCase
+                        enableRunCode
+                        metaData
+                        translatedContent
+                        judgerAvailable
+                        judgeType
+                        mysqlSchemas
+                        enableTestMode
+                        envInfo
+                        __typename
+                    }
+                    }
+                """,
+                variables=leetcode.GraphqlQueryGetQuestionDetailVariables(title_slug=title_slug),
+                operation_name="getQuestionDetail",
+            )
+
+        response = self.api_instance.graphql_post(body=graphql_request)
+
+        data = response.data
+
+        return data.question.status == 'ac'
     
     def get_problem_url(self, title):
         base_url = "https://leetcode.com/problems/"
         base_url += slugify(title)
         return base_url
     
+
+
 def main():
     test_object = LeetcodeInst()
 
-    print(test_object.get_problem_list())
+    print(test_object.problem_is_completed("two-sum"))
    
 
 if __name__=="__main__":
