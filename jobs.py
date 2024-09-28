@@ -51,7 +51,6 @@ def scrape_url(url):
 
     return df
 
-# reduce the table to only the columns we need: 'Company', 'Role', 'Location', 'Link', 'Date'
 def prune_table(df):
     column_mapping = {
         'Company': ['Company', 'Employer', 'Organization'],
@@ -73,16 +72,13 @@ def prune_table(df):
 
     df.rename(columns=new_column_names, inplace=True)
     final_df = df[['Company', 'Role', 'Location', 'Link', 'Date']]
-    final_df = final_df[final_df['Link'].str.len() >= 6]
-
     return final_df
 
-url = "https://github.com/Ouckah/Summer2025-Internships#we-love-our-contributors-%EF%B8%8F%EF%B8%8F"
-url = "https://github.com/arunike/Summer-2025-Internship-List?tab=readme-ov-file#contributing"
-url = "https://github.com/SimplifyJobs/Summer2025-Internships#we-love-our-contributors-%EF%B8%8F%EF%B8%8F"
-data = scrape_url(url)
-data = prune_table(data)
-print(data)
-print(data.value_counts("Location"))
-print(data.value_counts("Company"))
-print("done!")
+def get_datatoshow():
+    url = "https://github.com/arunike/Summer-2025-Internship-List?tab=readme-ov-file#contributing"
+    data = scrape_url(url)
+    if not data.empty:
+        datatoshow = prune_table(data)
+        return datatoshow
+    else:
+        return pd.DataFrame()
