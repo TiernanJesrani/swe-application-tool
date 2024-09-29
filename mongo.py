@@ -47,7 +47,12 @@ def open_collection(collection_name):
 # pulls data from the database and converts it to a pandas DF
 def fetch_data_to_dataframe(collection_name):
     collection = open_collection(collection_name)
-    data = list(collection.find())
+    if collection_name == 'app_listings':
+        data = list(collection.find({
+            'hidden': False
+        }))
+    else:
+        data = list(collection.find())
     df = pd.DataFrame(data)
     return df
 
@@ -69,7 +74,44 @@ def enter_leetcode_data(title):
             {"title":title}
         )
 
+def get_sankey_vals():
+    applied_collection = open_collection("app_applied")
 
+    all_applications = applied_collection.find()
+
+    ["Applied", "No Answer", "Rejected", "Interviews", "Offers", "Accepted"]
+    applied = 0
+    no_answer = 0
+    rejected = 0
+    interviews = 0
+    offers = 0
+    accepted = 0
+
+
+    for application in all_applications:
+        if application['status'] == 'Applied':
+            applied += 1
+        elif application['status'] == 'No Answer':
+            applied += 1
+            no_answer += 1
+        elif application['status'] == 'Rejected':
+            applied += 1
+            rejected += 1
+        elif application['status'] == 'Interview':
+            applied += 1
+            interviews += 1
+        elif application['status'] == 'Offer':
+            applied += 1
+            interviews += 1
+            offers += 1
+        elif application['status'] == 'Accepted':
+            applied += 1
+            interviews += 1
+            offers += 1
+            accepted += 1
+    
+    return [no_answer, rejected, interviews, offers, accepted]
+        
     
 
 # apps = open_collection("app_listings")

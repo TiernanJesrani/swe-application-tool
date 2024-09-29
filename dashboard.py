@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from leetcode_folder import leetcodeClass
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode, DataReturnMode
-from mongo import apply, fetch_data_to_dataframe, enter_leetcode_data, update_status_in_database
+from mongo import apply, fetch_data_to_dataframe, enter_leetcode_data, update_status_in_database, get_sankey_vals
 from datetime import datetime, timedelta
 
 # Set the page configuration at the very beginning
@@ -104,7 +104,7 @@ with header_container:
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 # Main content with three columns
-cols_main = st.columns(3, gap="large")
+cols_main = st.columns(2, gap="large")
 
 with cols_main[0]:
     st.markdown("<h3 style='text-align: center;'>Application Progress</h3>", unsafe_allow_html=True)
@@ -116,8 +116,6 @@ with cols_main[0]:
     for app in apps['date']:
         if is_last_week(app):
             completed_applications += 1
-
-    print(("completed_applications", completed_applications))
 
     denominator_applications = st.session_state.applications_goal
     numerator_applications = completed_applications
@@ -253,15 +251,19 @@ with cols_main[0]:
         'status',
         editable=True,
         cellEditor='agSelectCellEditor',
-        cellEditorParams={'values': ['Applied', 'Interview', 'Accepted', 'Rejected']},
+        cellEditorParams={'values': ['Applied', 'No Answer',  'Rejected', 'Interview', 'Offer', 'Accepted']},
         cellStyle=JsCode('''
             function(params) {
                 if (params.value == 'Accepted') {
-                    return {'backgroundColor': 'green', 'color': 'white'};
+                    return {'backgroundColor': 'purple', 'color': 'white'};
                 } else if (params.value == 'Interview') {
                     return {'backgroundColor': 'yellow', 'color': 'black'};
                 } else if (params.value == 'Rejected') {
                     return {'backgroundColor': 'red', 'color': 'white'};
+                } else if (params.value == 'Offer') {
+                    return {'backgroundColor': 'green', 'color': 'white'};
+                } else if (params.value == 'No Answer') {
+                    return {'backgroundColor': 'cyan', 'color': 'white'};
                 } else {
                     return {};
                 }
@@ -305,61 +307,10 @@ with cols_main[0]:
         record_id = row['_id']
         new_status = row['status_updated']
         link_tochange = row['link_original']
-        print(new_status)
-        print(link_tochange)
         update_status_in_database(new_status, link_tochange)
 
-
-# Second Column: Events Near Me
-with cols_main[1]:
-    st.markdown("<h3 style='text-align: center;'>Sankey Chart</h3>", unsafe_allow_html=True)
-    st.write("Coming soon...")
-
-    node_labels = ["Applied", "No Answer", "Rejected", "Interviews", "Offers", "Accepted"]
-    source = [0, 0, 0, 3, 4]  
-    target = [1, 2, 3, 4, 5]  
-
-    values = [60, 40, 17, 3, 2]
-
-    link_colors = [
-    "rgba(0, 0, 255, 0.5)",  # Blue with 60% opacity
-    "rgba(255, 0, 0, 0.5)",  # Red with 80% opacity
-    "rgba(255, 165, 0, 0.5)",  # Orange with 50% opacity
-    "rgba(0, 128, 0, 0.5)",  # Green with 70% opacity
-    "rgba(128, 0, 128, 0.5)"  # Purple with 40% opacity
-    ]
-
-    node_colors = [
-    "rgba(0, 170, 139, 0.8)",
-    "rgba(0, 0, 255, 0.8)",  # Blue with 60% opacity
-    "rgba(255, 0, 0, 0.8)",  # Red with 80% opacity
-    "rgba(255, 165, 0, 0.8)",  # Orange with 50% opacity
-    "rgba(0, 128, 0, 0.8)",  # Green with 70% opacity
-    "rgba(128, 0, 128, 0.8)"  # Purple with 40% opacity
-    ]
-
-    fig = go.Figure(go.Sankey(
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="black", width=0.5),
-            label=node_labels,
-            color=node_colors,
-        ),
-        link=dict(
-            source=source,  
-            target=target, 
-            value=values,  
-            color=link_colors 
-        )
-    ))
-
-    # Display in Streamlit
-    st.title("Sankey Chart Example")
-    st.plotly_chart(fig)
-
 # Third Column: Leetcode Progress and Content
-with cols_main[2]:
+with cols_main[1]:
     leetcode_instance = leetcodeClass.LeetcodeInst()
     st.markdown("<h3 style='text-align: center;'>Leetcode Progress</h3>", unsafe_allow_html=True)
     
@@ -443,7 +394,7 @@ with cols_main[2]:
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True,  # Allow rendering of HTML content
         update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.SELECTION_CHANGED,
-        height=950,
+        height=400,
         theme='alpine',  # Ensure both tables use the same theme
         selection_mode='single'
     )
@@ -457,3 +408,46 @@ with cols_main[2]:
         print("try failed")
         print(e)
         pass
+
+    node_labels = ["Applied", "No Answer", "Rejected", "Interviews", "Offers", "Accepted"]
+    source = [0, 0, 0, 3, 4]  
+    target = [1, 2, 3, 4, 5]  
+    sankey_vals = get_sankey_vals()
+    print(sankey_vals)
+    values = sankey_vals
+
+    link_colors = [
+    "rgba(41, 185, 123, 0.5)",  # Blue
+    "rgba(208, 38, 38, 0.5)",  # Red
+    "rgba(236, 236, 83, 0.5)",  # Yellow
+    "rgba(52, 185, 42, 0.5)",  # Green
+    "rgba(205, 51, 229, 0.5)"  # Purple
+    ]
+
+    node_colors = [
+    "rgba(41, 185, 123, 0.8)",  # Blue
+    "rgba(41, 185, 123, 0.8)",  # Yellow
+    "rgba(208, 38, 38, 0.8)",  # Red
+    "rgba(52, 185, 42, 0.8)",  # Green
+    "rgba(205, 51, 229, 0.8)",  # Purple
+    "rgba(205, 51, 229, 0.8)"
+    ]
+
+    fig = go.Figure(go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=node_labels,
+            color=node_colors,
+        ),
+        link=dict(
+            source=source,  
+            target=target, 
+            value=values,  
+            color=link_colors 
+        )
+    ))
+
+    st.markdown("<h3 style='text-align: center;'>Sankey Diagram</h3>", unsafe_allow_html=True)
+    st.plotly_chart(fig)
