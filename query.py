@@ -48,7 +48,8 @@ def open_collection(collection_name):
     return collection
 
 # pulls data from the database and converts it to a pandas DF
-def fetch_data_to_dataframe(collection):
+def fetch_data_to_dataframe(collection_name):
+    collection = open_collection(collection_name)
     data = list(collection.find())
     df = pd.DataFrame(data)
     return df

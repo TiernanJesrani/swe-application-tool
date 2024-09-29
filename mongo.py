@@ -1,4 +1,4 @@
-from datetime import datetime   # This will be needed later
+from datetime import datetime, timedelta   # This will be needed later
 import os
 import pandas as pd
 
@@ -7,6 +7,7 @@ from pymongo import MongoClient
 
 from jobs import scrape_url, convert_data_entry, master_df, not_in_db
 
+MONGODB_URI = os.environ['MONGODB_URI']
 def apply(link):
     listings_collection = open_collection("app_listings")
     applied_collection = open_collection("app_applied")
@@ -19,9 +20,6 @@ def apply(link):
     listing = listings_collection.find_one(
          { "link" : link }
     )
-
-    print(listing)
-
 
     data = {
         "company": listing["company"],
@@ -36,7 +34,6 @@ def apply(link):
 
 def open_collection(collection_name):
     load_dotenv()
-    MONGODB_URI = os.environ['MONGODB_URI']
 
     # Connect to your MongoDB cluster:
     client = MongoClient(MONGODB_URI)
@@ -54,11 +51,24 @@ def fetch_data_to_dataframe(collection_name):
     df = pd.DataFrame(data)
     return df
 
+def update_status_in_database(new_status, link):
+    collection = open_collection('app_applied')
+    
+    # Update the status
+    collection.find_one_and_update(
+        { "link" : link },
+        { "$set": {"status" : new_status} }
+    )
+    
+
+
 def enter_leetcode_data(title):
     lc_collection = open_collection("lc_cache")
-    lc_collection.insert_one(
-        {"title":title}
-    )
+    if lc_collection.count_documents({"title": title}) == 0:
+        lc_collection.insert_one(
+            {"title":title}
+        )
+
 
     
 
@@ -74,7 +84,7 @@ def enter_leetcode_data(title):
 # apply("http://redirect.cvrve.me/e36fd103a077bcbda08a?utm_source=ouckah")
 
 def main():
-    enter_leetcode_data("testing")
+    print(fetch_data_to_dataframe('app_listings'))
 
 if __name__=="__main__":
     main()
