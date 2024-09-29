@@ -1,12 +1,13 @@
 import streamlit as st
 import pandas as pd
-from jobs import get_datatoshow
+#from jobs import 
 import plotly.graph_objects as go
 from leetcode_folder import leetcodeClass
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
+from mongo import apply, fetch_data_to_dataframe
 
 # Set the page configuration at the very beginning
-st.set_page_config(page_title="Hello, Rishab", layout="wide")
+st.set_page_config(page_title="Hello, Tiernan", layout="wide")
 
 # Initialize session state for goals
 if 'leetcode_goal' not in st.session_state:
@@ -15,9 +16,12 @@ if 'leetcode_goal' not in st.session_state:
 if 'applications_goal' not in st.session_state:
     st.session_state.applications_goal = 0
 
-def handle_link_click(link):
-    print(link)
-    st.write(link)
+def handle_application_click(link):
+    apply(link)
+
+def handle_leetcode_click(title):
+    
+    apply(link)
 
 # Function to toggle goal inputs using a popover
 def toggle_goal_inputs():
@@ -124,7 +128,7 @@ with cols_main[0]:
     search_query_app = st.text_input('Search Applications', '')
     
     # Get and process the data
-    data = get_datatoshow()  # Ensure this function returns your DataFrame with 'Link' column
+    data = fetch_data_to_dataframe('applications')
     # Now make the 'Role' column clickable
     data['Role'] = data.apply(lambda x: make_clickable(x['Link'], x['Role']), axis=1)
     # Include the 'Link' column in the DataFrame but exclude it from display
@@ -184,7 +188,7 @@ with cols_main[0]:
     try:
         selected_row = grid_response['selected_rows'].iloc[0]
         link = selected_row['Link']
-        handle_link_click(link)
+        handle_application_click(link)
     except Exception as e:
         print("try failed")
         print(e)
@@ -291,7 +295,7 @@ with cols_main[2]:
     try:
         selected_row = grid_response['selected_rows'].iloc[0]
         link = selected_row['Plain_Title']
-        handle_link_click(link)
+        handle_leetcode_click(link)
     except Exception as e:
         print("try failed")
         print(e)
