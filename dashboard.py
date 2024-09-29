@@ -10,14 +10,97 @@ from datetime import datetime, timedelta
 # Set the page configuration at the very beginning
 st.set_page_config(page_title="Hello, Tiernan", layout="wide")
 
+st.markdown(
+    """
+    <!-- Import Roboto Mono from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+    /* Apply a vertical gradient from white to light blue and set global font */
+    .stApp {
+        background: linear-gradient(to bottom, white, #ADD8E6);
+        font-family: 'Roboto Mono', monospace; /* Set global font to Roboto Mono */
+    }
 
+    /* Ensure that all container backgrounds are semi-transparent to show the gradient */
+    .stContainer {
+        background-color: rgba(255, 255, 255, 0.85); /* Slight transparency */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Add subtle shadow for depth */
+        border-radius: 12px; /* Rounded corners for a modern look */
+        padding: 20px; /* Consistent padding */
+        margin: 10px; /* Space between containers */
+    }
+
+    /* Style headers with Roboto Mono */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Roboto Mono', monospace !important; /* Ensure overriding any other styles */
+        color: #333333; /* Darker text for better readability */
+    }
+
+    /* Enhance text elements */
+    body, p, div, span, label {
+        font-family: 'Roboto Mono', monospace;
+        font-size: 16px; /* Increase global font size for better readability */
+        color: #444444; /* Slightly lighter than headers */
+    }
+
+    /* Style buttons */
+    .stButton > button {
+        background-color: #4CAF50; /* Green background */
+        color: white; /* White text */
+        border: none;
+        border-radius: 8px; /* Rounded corners */
+        padding: 10px 20px; /* Padding inside buttons */
+        font-size: 16px;
+        font-family: 'Roboto Mono', monospace;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+    }
+
+    .stButton > button:hover {
+        background-color: #45a049; /* Darker green on hover */
+    }
+
+    /* Style input fields */
+    .stTextInput > div > div > input {
+        border: 1px solid #cccccc; /* Light gray border */
+        border-radius: 8px; /* Rounded corners */
+        padding: 8px; /* Padding inside input */
+        font-size: 16px;
+        font-family: 'Roboto Mono', monospace;
+    }
+
+    /* Style data tables */
+    .ag-theme-alpine .ag-header {
+        background-color: #f0f0f0; /* Light gray header */
+        font-family: 'Roboto Mono', monospace;
+        font-size: 16px;
+    }
+
+    .ag-theme-alpine .ag-row {
+        font-family: 'Roboto Mono', monospace;
+        font-size: 14px;
+    }
+
+    /* Additional UI enhancements */
+    .popover-content {
+        background-color: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        padding: 15px;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Initialize session state for goals
-if 'leetcode_goal' not in st.session_state:
-    st.session_state.leetcode_goal = 1
+if 'denominator_leetcode' not in st.session_state:
+    st.session_state.temp_leetcode_goal = 10
 
-if 'applications_goal' not in st.session_state:
-    st.session_state.applications_goal = 1
+if 'denominator_applications' not in st.session_state:
+    st.session_state.temp_applications_goal = 10
 
 def handle_application_click(link):
     apply(link)
@@ -35,26 +118,27 @@ def is_last_week(date):
 # Function to toggle goal inputs using a popover
 def toggle_goal_inputs():
     with st.popover("Set Goals"):
-        st.session_state.leetcode_goal = st.number_input(
+        st.session_state.denominator_leetcode = st.number_input(
             "Daily Leetcode Problems Completed",
             min_value=0,
             step=1,
             key='temp_leetcode_goal'
         )
-        st.session_state.applications_goal = st.number_input(
+        st.session_state.denominator_applications = st.number_input(
             "Daily Applications Submitted",
             min_value=0,
             step=1,
             key='temp_applications_goal'
         )
 
+
 def make_clickable(link, text):
     return f'<a href="{link}" target="_blank">{text}</a>'
 
 # Function to save goals
 def save_goals():
-    st.session_state.leetcode_goal = st.session_state.temp_leetcode_goal
-    st.session_state.applications_goal = st.session_state.temp_applications_goal
+    st.session_state.denominator_leetcode = st.session_state.temp_leetcode_goal
+    st.session_state.denominator_applications = st.session_state.temp_applications_goal
     st.session_state.show_goal_inputs = False
     st.success("Goals have been updated successfully!")
 
@@ -70,14 +154,15 @@ def create_donut_chart(current, goal):
         labels=['Completed', 'Remaining'],
         values=[progress, remaining],
         hole=.6,
-        marker=dict(colors=['#4CAF50', '#d3d3d3']),
+        marker=dict(colors=['#4CAF50', '#f0eded']),
         hoverinfo='label+percent',
         textinfo='none'
     )])
 
     fig.update_layout(
         showlegend=False,
-        margin=dict(t=0, b=0, l=25, r=25),  # Symmetric and minimal margins
+        margin=dict(t=0, b=0, l=25, r=25),
+        paper_bgcolor='rgba(0, 0, 0, 0)',
     )
 
     return fig
@@ -93,7 +178,7 @@ with header_container:
         st.markdown(
             """
             <h1 style='text-align: center; font-family: Arial, sans-serif;'>
-                Hello, Rishab!
+                Hello, Tiernan!
             </h1>
             """,
             unsafe_allow_html=True
@@ -106,6 +191,7 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 # Main content with three columns
 cols_main = st.columns(2, gap="large")
 
+
 with cols_main[0]:
     st.markdown("<h3 style='text-align: center;'>Application Progress</h3>", unsafe_allow_html=True)
     
@@ -117,7 +203,7 @@ with cols_main[0]:
         if is_last_week(app):
             completed_applications += 1
 
-    denominator_applications = st.session_state.applications_goal
+    denominator_applications = st.session_state.denominator_applications
     numerator_applications = completed_applications
     # Calculate completion percentage
     if denominator_applications == 0:
@@ -316,7 +402,7 @@ with cols_main[1]:
     
     # Example completed problems; replace with dynamic data as needed
     numerator_leetcode = leetcode_instance.get_progress_weekly()
-    denominator_leetcode = st.session_state.leetcode_goal
+    denominator_leetcode = st.session_state.denominator_leetcode
     # Calculate completion percentage
     if denominator_leetcode == 0:
         numerator_leetcode = 0 
@@ -448,6 +534,12 @@ with cols_main[1]:
             color=link_colors 
         )
     ))
+
+    fig.update_layout(
+        showlegend=False,
+        margin=dict(t=20, b=0, l=25, r=25),
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+    )
 
     st.markdown("<h3 style='text-align: center;'>Sankey Diagram</h3>", unsafe_allow_html=True)
     st.plotly_chart(fig)
