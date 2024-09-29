@@ -315,6 +315,49 @@ with cols_main[1]:
     st.markdown("<h3 style='text-align: center;'>Sankey Chart</h3>", unsafe_allow_html=True)
     st.write("Coming soon...")
 
+    node_labels = ["Applied", "No Answer", "Rejected", "Interviews", "Offers", "Accepted"]
+    source = [0, 0, 0, 3, 4]  
+    target = [1, 2, 3, 4, 5]  
+
+    values = [60, 40, 17, 3, 2]
+
+    link_colors = [
+    "rgba(0, 0, 255, 0.5)",  # Blue with 60% opacity
+    "rgba(255, 0, 0, 0.5)",  # Red with 80% opacity
+    "rgba(255, 165, 0, 0.5)",  # Orange with 50% opacity
+    "rgba(0, 128, 0, 0.5)",  # Green with 70% opacity
+    "rgba(128, 0, 128, 0.5)"  # Purple with 40% opacity
+    ]
+
+    node_colors = [
+    "rgba(0, 170, 139, 0.8)",
+    "rgba(0, 0, 255, 0.8)",  # Blue with 60% opacity
+    "rgba(255, 0, 0, 0.8)",  # Red with 80% opacity
+    "rgba(255, 165, 0, 0.8)",  # Orange with 50% opacity
+    "rgba(0, 128, 0, 0.8)",  # Green with 70% opacity
+    "rgba(128, 0, 128, 0.8)"  # Purple with 40% opacity
+    ]
+
+    fig = go.Figure(go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=node_labels,
+            color=node_colors,
+        ),
+        link=dict(
+            source=source,  
+            target=target, 
+            value=values,  
+            color=link_colors 
+        )
+    ))
+
+    # Display in Streamlit
+    st.title("Sankey Chart Example")
+    st.plotly_chart(fig)
+
 # Third Column: Leetcode Progress and Content
 with cols_main[2]:
     leetcode_instance = leetcodeClass.LeetcodeInst()
@@ -400,7 +443,7 @@ with cols_main[2]:
         enable_enterprise_modules=False,
         allow_unsafe_jscode=True,  # Allow rendering of HTML content
         update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.SELECTION_CHANGED,
-        height=946,
+        height=950,
         theme='alpine',  # Ensure both tables use the same theme
         selection_mode='single'
     )
