@@ -1,9 +1,9 @@
 import leetcode
-import leetcode_secrets
 from slugify import slugify
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import os
+from . import leetcode_secrets
 
 class LeetcodeInst:
     def __init__(self):
@@ -32,7 +32,12 @@ class LeetcodeInst:
             url = self.get_problem_url(name)
             difficulty = problem_data.difficulty
             tags = [tag.name for tag in problem_data.topic_tags]
-            problem_list.append((name, url, difficulty, tags))
+            problem_list.append({
+            'Title': name,
+            'url': url,
+            'Difficulty': difficulty,
+            'Tags': tags
+            })
 
         return problem_list
     
@@ -111,7 +116,7 @@ class LeetcodeInst:
             """,
             variables=leetcode.GraphqlQueryProblemsetQuestionListVariables(
                 category_slug="algorithms",
-                limit=10,
+                limit=100,
                 skip=3,
                 filters=leetcode.GraphqlQueryProblemsetQuestionListVariablesFilterInput(
                     status='NOT_STARTED',

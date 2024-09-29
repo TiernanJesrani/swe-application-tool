@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from jobs import get_datatoshow
 import plotly.graph_objects as go
+from leetcode_folder import leetcodeClass
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
 
 # Set the page configuration at the very beginning
 st.set_page_config(page_title="Hello, Rishab", layout="wide")
@@ -12,6 +14,10 @@ if 'leetcode_goal' not in st.session_state:
 
 if 'applications_goal' not in st.session_state:
     st.session_state.applications_goal = 0
+
+def handle_link_click(link):
+    print(link)
+    st.write(link)
 
 # Function to toggle goal inputs using a popover
 def toggle_goal_inputs():
@@ -28,6 +34,9 @@ def toggle_goal_inputs():
             step=1,
             key='temp_applications_goal'
         )
+
+def make_clickable(link, text):
+    return f'<a href="{link}" target="_blank">{text}</a>'
 
 # Function to save goals
 def save_goals():
@@ -55,7 +64,7 @@ def create_donut_chart(current, goal):
 
     fig.update_layout(
         showlegend=False,
-        margin=dict(t=0, b=200, l=25, r=25),  # Symmetric and minimal margins
+        margin=dict(t=0, b=0, l=25, r=25),  # Symmetric and minimal margins
     )
 
     return fig
@@ -84,10 +93,7 @@ st.markdown("<br><br>", unsafe_allow_html=True)
 # Main content with three columns
 cols_main = st.columns(3, gap="large")
 
-# First Column: Applications Progress and Data
 with cols_main[0]:
-    
-    # Applications Header (Moved Up)
     st.markdown("<h3 style='text-align: center;'>Application Progress</h3>", unsafe_allow_html=True)
     
     # Example completed applications; replace with dynamic data as needed
@@ -109,17 +115,81 @@ with cols_main[0]:
     # Create donut chart
     fig_applications = create_donut_chart(completed_applications, applications_goal)
     
-    # Center the chart using adjusted columns
-    chart_cols = st.columns([1, 3, 1])  # Wider middle column for better centering
+    # Center the chart
+    chart_cols = st.columns([1, 3, 1])
     with chart_cols[1]:
         st.plotly_chart(fig_applications, use_container_width=True)
     
-    # Display data if available
-    data = get_datatoshow()
-    if not data.empty:
-        st.dataframe(data, height=400)
+    # Add a search bar
+    search_query_app = st.text_input('Search Applications', '')
+    
+    # Get and process the data
+    data = get_datatoshow()  # Ensure this function returns your DataFrame with 'Link' column
+    # Now make the 'Role' column clickable
+    data['Role'] = data.apply(lambda x: make_clickable(x['Link'], x['Role']), axis=1)
+    # Include the 'Link' column in the DataFrame but exclude it from display
+    grid_columns = ['Company', 'Role', 'Location', 'Date', 'Link']
+    display_columns = ['Company', 'Role', 'Location', 'Date']
+    data_display = data[grid_columns]
+    
+    # Define the columns to search in
+    search_columns = ['Company', 'Role', 'Location', 'Date']
+    
+    # Filter the DataFrame based on the search query
+    if search_query_app:
+        mask = data[search_columns].apply(lambda x: x.astype(str).str.contains(search_query_app, case=False, na=False)).any(axis=1)
+        filtered_data = data_display[mask]
     else:
-        st.markdown("<div style='text-align: center;'>No data available.</div>", unsafe_allow_html=True)
+        filtered_data = data_display
+    
+    # Configure AgGrid options
+    gb = GridOptionsBuilder.from_dataframe(filtered_data)
+    gb.configure_default_column(editable=False, sortable=True, filter=True, resizable=True)
+    
+    # Hide the 'Link' column
+    gb.configure_column('Link', hide=True)
+    
+    # Enable HTML content in the 'Role' column
+    gb.configure_column("Role", cellRenderer=JsCode('''
+        function(params) {
+            params.eGridCell.innerHTML = params.value;
+            return '';
+        }
+    '''))
+    
+    # Adjust the width and enable text wrapping for 'Location' column
+    gb.configure_column(
+        "Location",
+        width=150,  # Adjust the width as needed
+        wrapText=True,
+        autoHeight=True,
+        cellStyle={'white-space': 'normal'}
+    )
+
+    gb.configure_selection('single')
+    grid_options = gb.build()
+    
+    # Display the data frame using AgGrid with selection enabled
+    grid_response = AgGrid(
+        filtered_data,
+        gridOptions=grid_options,
+        enable_enterprise_modules=False,
+        allow_unsafe_jscode=True,  # Allow rendering of HTML content
+        update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.SELECTION_CHANGED,
+        height=400,
+        theme='alpine',  # Ensure both tables use the same theme
+        selection_mode='single'
+    )
+    
+    try:
+        selected_row = grid_response['selected_rows'].iloc[0]
+        link = selected_row['Link']
+        handle_link_click(link)
+    except Exception as e:
+        print("try failed")
+        print(e)
+        print(grid_response['selected_rows'])
+        pass
 
 # Second Column: Events Near Me
 with cols_main[1]:
@@ -128,8 +198,6 @@ with cols_main[1]:
 
 # Third Column: Leetcode Progress and Content
 with cols_main[2]:
-    
-    # Leetcode Header (Moved Up)
     st.markdown("<h3 style='text-align: center;'>Leetcode Progress</h3>", unsafe_allow_html=True)
     
     # Example completed problems; replace with dynamic data as needed
@@ -151,9 +219,81 @@ with cols_main[2]:
     # Create donut chart
     fig_leetcode = create_donut_chart(completed_problems, leetcode_goal)
     
-    # Center the chart using adjusted columns
-    chart_cols = st.columns([1, 3, 1])  # Wider middle column for better centering
+    # Center the chart
+    chart_cols = st.columns([1, 3, 1])
     with chart_cols[1]:
         st.plotly_chart(fig_leetcode, use_container_width=True)
     
-    st.write("Content for Leetcode goes here.")
+    # Get the Leetcode problem list
+    leetcode_instance = leetcodeClass.LeetcodeInst()
+    problem_list = leetcode_instance.get_problem_list()
+    leetcode_df = pd.DataFrame(problem_list)
+
+    # Add a search bar
+    search_query_leet = st.text_input('Search Leetcode Problems', '')
+    
+    # Define the columns to search in
+    search_columns = ['Title', 'Difficulty', 'Tags']
+    
+    # Process 'Tags' if necessary
+    leetcode_df['Tags'] = leetcode_df['Tags'].apply(lambda x: ', '.join(x))
+    
+    # Create clickable links in the 'Title' column
+    leetcode_df['Plain_Title'] = leetcode_df['Title']
+    leetcode_df['Title'] = leetcode_df.apply(lambda x: make_clickable(x['url'], x['Title']), axis=1)
+    
+    # Include the 'url' column but exclude it from display
+    grid_columns = ['Title', 'Difficulty', 'Tags', 'url', 'Plain_Title']
+    display_columns = ['Title', 'Difficulty', 'Tags']
+
+    leetcode_df_display = leetcode_df[grid_columns]
+    
+    
+    # Filter the DataFrame based on the search query
+    if search_query_leet:
+        mask = leetcode_df[search_columns].apply(lambda x: x.astype(str).str.contains(search_query_leet, case=False, na=False)).any(axis=1)
+        filtered_leetcode_df = leetcode_df_display[mask]
+    else:
+        filtered_leetcode_df = leetcode_df_display
+    
+    # Configure AgGrid options
+    gb = GridOptionsBuilder.from_dataframe(filtered_leetcode_df)
+    gb.configure_default_column(editable=False, sortable=True, filter=True, resizable=True)
+    
+    # Hide the 'url' column
+    gb.configure_column('url', hide=True)
+    gb.configure_column('Plain_Title', hide=True)
+    
+    # Enable HTML content in the 'Title' column
+    gb.configure_column("Title", cellRenderer=JsCode('''
+        function(params) {
+            params.eGridCell.innerHTML = params.value;
+            return '';
+        }
+    '''))
+    
+    gb.configure_selection('single')
+    grid_options = gb.build()
+    
+    # Display the data frame using AgGrid with selection enabled
+    grid_response = AgGrid(
+        filtered_leetcode_df,
+        gridOptions=grid_options,
+        enable_enterprise_modules=False,
+        allow_unsafe_jscode=True,  # Allow rendering of HTML content
+        update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.SELECTION_CHANGED,
+        height=400,
+        theme='alpine',  # Ensure both tables use the same theme
+        selection_mode='single'
+    )
+    
+    # Handle the selected row to print the link
+    try:
+        selected_row = grid_response['selected_rows'].iloc[0]
+        link = selected_row['Plain_Title']
+        handle_link_click(link)
+    except Exception as e:
+        print("try failed")
+        print(e)
+        print(grid_response['selected_rows'])
+        pass
