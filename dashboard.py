@@ -4,7 +4,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from leetcode_folder import leetcodeClass
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, JsCode
-from mongo import apply, fetch_data_to_dataframe
+from mongo import apply, fetch_data_to_dataframe, enter_leetcode_data
+from datetime import datetime
 
 # Set the page configuration at the very beginning
 st.set_page_config(page_title="Hello, Tiernan", layout="wide")
@@ -20,8 +21,7 @@ def handle_application_click(link):
     apply(link)
 
 def handle_leetcode_click(title):
-    
-    apply(link)
+    enter_leetcode_data(title)
 
 # Function to toggle goal inputs using a popover
 def toggle_goal_inputs():
@@ -128,16 +128,21 @@ with cols_main[0]:
     search_query_app = st.text_input('Search Applications', '')
     
     # Get and process the data
-    data = fetch_data_to_dataframe('applications')
+    data = fetch_data_to_dataframe('app_listings')
+    
+    # format datetime objects
+    data['date'] = data['date'].dt.strftime('%Y-%m-%d')
+
     # Now make the 'Role' column clickable
-    data['Role'] = data.apply(lambda x: make_clickable(x['Link'], x['Role']), axis=1)
+    data['role'] = data.apply(lambda x: make_clickable(x['link'], x['role']), axis=1)
+
     # Include the 'Link' column in the DataFrame but exclude it from display
-    grid_columns = ['Company', 'Role', 'Location', 'Date', 'Link']
-    display_columns = ['Company', 'Role', 'Location', 'Date']
+    grid_columns = ['company', 'role', 'location', 'date', 'link']
+    
     data_display = data[grid_columns]
     
     # Define the columns to search in
-    search_columns = ['Company', 'Role', 'Location', 'Date']
+    search_columns = ['company', 'role', 'location', 'date']
     
     # Filter the DataFrame based on the search query
     if search_query_app:
@@ -151,10 +156,10 @@ with cols_main[0]:
     gb.configure_default_column(editable=False, sortable=True, filter=True, resizable=True)
     
     # Hide the 'Link' column
-    gb.configure_column('Link', hide=True)
+    gb.configure_column('link', hide=True)
     
     # Enable HTML content in the 'Role' column
-    gb.configure_column("Role", cellRenderer=JsCode('''
+    gb.configure_column("role", cellRenderer=JsCode('''
         function(params) {
             params.eGridCell.innerHTML = params.value;
             return '';
@@ -163,7 +168,7 @@ with cols_main[0]:
     
     # Adjust the width and enable text wrapping for 'Location' column
     gb.configure_column(
-        "Location",
+        "location",
         width=150,  # Adjust the width as needed
         wrapText=True,
         autoHeight=True,
@@ -187,13 +192,71 @@ with cols_main[0]:
     
     try:
         selected_row = grid_response['selected_rows'].iloc[0]
-        link = selected_row['Link']
+        link = selected_row['link']
         handle_application_click(link)
     except Exception as e:
         print("try failed")
         print(e)
         print(grid_response['selected_rows'])
         pass
+
+
+
+st.markdown("<h3 style='text-align: center;'>Applied Applications</h3>", unsafe_allow_html=True)
+
+
+data_applied = fetch_data_to_dataframe('app_applied')
+data_applied['date'] = data_applied['date'].dt.strftime('%Y-%m-%d')
+data_applied['role'] = data_applied.apply(lambda x: make_clickable(x['link'], x['role']), axis=1)
+
+grid_columns_applied = ['company', 'role', 'location', 'date', 'link']
+data_display_applied = data_applied[grid_columns_applied]
+
+search_columns_applied = ['company', 'role', 'location', 'date']
+
+search_query_app_applied = st.text_input('Search Applied Applications', '')
+
+if search_query_app_applied:
+    mask_applied = data_applied[search_columns_applied].apply(
+        lambda x: x.astype(str).str.contains(search_query_app_applied, case=False, na=False)
+    ).any(axis=1)
+    filtered_data_applied = data_display_applied[mask_applied]
+else:
+    filtered_data_applied = data_display_applied
+
+gb_applied = GridOptionsBuilder.from_dataframe(filtered_data_applied)
+gb_applied.configure_default_column(editable=False, sortable=True, filter=True, resizable=True)
+
+gb_applied.configure_column('link', hide=True)
+
+gb_applied.configure_column("role", cellRenderer=JsCode('''
+    function(params) {
+        return params.value;
+    }
+'''))
+
+gb_applied.configure_column(
+    "location",
+    width=150, 
+    wrapText=True,
+    autoHeight=True,
+    cellStyle={'white-space': 'normal'}
+)
+
+gb_applied.configure_selection('single')
+grid_options_applied = gb_applied.build()
+
+grid_response_applied = AgGrid(
+    filtered_data_applied,
+    gridOptions=grid_options_applied,
+    enable_enterprise_modules=False,
+    allow_unsafe_jscode=True, 
+    update_mode=GridUpdateMode.MODEL_CHANGED | GridUpdateMode.SELECTION_CHANGED,
+    height=400,
+    theme='alpine',  
+    selection_mode='single'
+)
+
 
 # Second Column: Events Near Me
 with cols_main[1]:
@@ -294,8 +357,8 @@ with cols_main[2]:
     # Handle the selected row to print the link
     try:
         selected_row = grid_response['selected_rows'].iloc[0]
-        link = selected_row['Plain_Title']
-        handle_leetcode_click(link)
+        title = selected_row['Plain_Title']
+        handle_leetcode_click(title)
     except Exception as e:
         print("try failed")
         print(e)
