@@ -8,13 +8,11 @@ from pymongo import MongoClient
 def scrape_url(url):
     response = re.get(url)
     if response.status_code == 200:
-        print("request was successful")
         soup = BeautifulSoup(response.content, 'html.parser')
         
         # Locate the table using the <markdown-accessiblity-table> tag
         table = soup.find('markdown-accessiblity-table')
         if table:
-            print("table found... extracting data")
             headers = [header.text for header in table.find_all('th')]
             
             rows = []
