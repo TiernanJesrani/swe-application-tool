@@ -5,13 +5,11 @@ from bs4 import BeautifulSoup
 def scrape_url(url):
     response = re.get(url)
     if response.status_code == 200:
-        print("request was successful")
         soup = BeautifulSoup(response.content, 'html.parser')
         
         # Locate the table using the <markdown-accessiblity-table> tag
         table = soup.find('markdown-accessiblity-table')
         if table:
-            print("table found... extracting data")
             headers = [header.text for header in table.find_all('th')]
             
             rows = []
@@ -62,7 +60,6 @@ def prune_table(df):
     
     new_column_names = {}
     for col in df.columns:
-        print(col)
         for new_name, keywords in column_mapping.items():
             if any(keyword in col for keyword in keywords):
                 new_column_names[col] = new_name
