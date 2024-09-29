@@ -1,4 +1,4 @@
-#!/Users/tiernanjesrani/Desktop/MHacks2024/swe-application-tool/env/bin/python3.11
+#!/Users/tiernanjesrani/Desktop/MHacks2024/swe-application-tool/env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

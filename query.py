@@ -73,7 +73,7 @@ def enter_leetcode_data(title):
 # apply("http://redirect.cvrve.me/e36fd103a077bcbda08a?utm_source=ouckah")
 
 def main():
-    enter_leetcode_data("testing")
+    enter_leetcode_data("Two sum")
 
 if __name__=="__main__":
     main()
